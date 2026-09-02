@@ -3,3 +3,5 @@
 build/
 DerivedData/
 *.dmg
+TwentyTwentyTwenty.xcodeproj/
+*.xcworkspace
