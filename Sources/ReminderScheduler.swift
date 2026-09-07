@@ -43,6 +43,7 @@ final class ReminderScheduler {
     }
 
     func screenStateChanged(to newValue: ScreenState) {
+        guard newValue != screenState else { return }
         screenState = newValue
         guard isEnabled else { return }
         transition(to: newValue == .active ? startedState() : .suspended)

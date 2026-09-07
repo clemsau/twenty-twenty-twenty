@@ -156,4 +156,13 @@ struct ReminderSchedulerTests {
         scheduler.setEnabled(true)
         #expect(activity.beginCount == 1)
     }
+
+    @Test("Redundant active notification does not reset the in-flight countdown")
+    func redundantActiveDoesNotResetCountdown() {
+        let (scheduler, clock, _, _) = makeCounting()
+        clock.advance(by: 600)
+        // Screen was already active; delivering active again must be a no-op.
+        scheduler.screenStateChanged(to: .active)
+        #expect(scheduler.secondsRemaining == 600)
+    }
 }
