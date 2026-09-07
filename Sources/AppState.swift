@@ -30,7 +30,7 @@ final class AppState {
     var soundEnabled = true {
         didSet {
             // Skip side effects while restoring persisted state at launch.
-            guard !isLoading else { return }
+            guard !isSyncingFromSystem else { return }
             guard oldValue != soundEnabled else { return }
             defaults.set(soundEnabled, forKey: Key.soundEnabled)
             scheduler.soundEnabled = soundEnabled
@@ -39,8 +39,8 @@ final class AppState {
 
     var launchAtLogin = false {
         didSet {
-            // Skip SMAppService calls while restoring persisted state at launch.
-            guard !isLoading else { return }
+            // Skip SMAppService calls when the write only mirrors the system.
+            guard !isSyncingFromSystem else { return }
             guard oldValue != launchAtLogin else { return }
             applyLaunchAtLogin()
         }
@@ -57,10 +57,17 @@ final class AppState {
     private let scheduler: ReminderScheduler
     private var timer: Timer?
 
-    /// True only during the `start()` loading phase. Prevents `didSet`
-    /// observers from firing their persistence/registration side effects when
-    /// we are restoring — rather than user-changing — state.
-    private var isLoading = false
+    /// True while we are writing a property to mirror what the system already
+    /// reports, rather than to enact a user's choice. Prevents `didSet`
+    /// observers from firing their persistence/registration side effects.
+    /// Set during the `start()` loading phase and during the corrective
+    /// write-back in `applyLaunchAtLogin()`.
+    ///
+    /// This matters more than it looks: under `@Observable` the stored
+    /// properties become computed, so assigning inside a `didSet` re-enters
+    /// that same `didSet` instead of being skipped as it would for a plain
+    /// stored property.
+    private var isSyncingFromSystem = false
 
     init() {
         scheduler = ReminderScheduler(
@@ -71,7 +78,14 @@ final class AppState {
     }
 
     func start() {
-        isLoading = true
+        // A MenuBarExtra's content view is torn down and rebuilt every time the
+        // menu opens, so start() can be called repeatedly. Without this guard a
+        // second call would add another RunLoop timer — the old one keeps
+        // firing because the RunLoop, not us, owns it — and the countdown would
+        // burn a second per tick per timer.
+        guard timer == nil else { return }
+
+        isSyncingFromSystem = true
 
         // Restore soundEnabled without triggering the UserDefaults write or
         // scheduler update in didSet. We sync the scheduler manually below.
@@ -81,7 +95,7 @@ final class AppState {
         // Restore launchAtLogin without triggering SMAppService.register().
         launchAtLogin = SMAppService.mainApp.status == .enabled
 
-        isLoading = false
+        isSyncingFromSystem = false
 
         monitor.onChange = { [weak self] newState in
             self?.scheduler.screenStateChanged(to: newState)
@@ -96,7 +110,7 @@ final class AppState {
         RunLoop.main.add(timer, forMode: .common)
         self.timer = timer
 
-        // Restore remindersEnabled AFTER isLoading is false so its didSet
+        // Restore remindersEnabled AFTER isSyncingFromSystem is false so its didSet
         // fires normally. A user who had reminders on expects them running
         // after a restart — the scheduler start and optional authorization
         // request are intentional on this property alone.
@@ -129,7 +143,14 @@ final class AppState {
             granted = true
         }
 
+        // Record the authorization fact first: the banner it drives describes
+        // the system, not the toggle, so it must not be left stale.
         permissionDenied = !granted
+
+        // The prompt is modal and slow; the user may have toggled reminders
+        // back off while it was up. Do not act on that stale intent.
+        guard remindersEnabled else { return }
+
         guard granted else {
             remindersEnabled = false
             return
@@ -161,7 +182,13 @@ final class AppState {
         } catch {
             // The registration failed (most often because the app is not in
             // /Applications); reflect reality rather than lying in the UI.
+            // Suppress the observer: under @Observable this assignment would
+            // otherwise re-enter launchAtLogin's didSet and call back into here
+            // with the corrected value, issuing an unregister() for the service
+            // the user just asked us to register.
+            isSyncingFromSystem = true
             launchAtLogin = SMAppService.mainApp.status == .enabled
+            isSyncingFromSystem = false
         }
     }
 }
