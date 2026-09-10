@@ -23,6 +23,19 @@ final class SystemNotifier: Notifier {
         await center.notificationSettings().authorizationStatus
     }
 
+    /// Removes every reminder this app has already delivered.
+    ///
+    /// `notify(withSound:)` schedules its own removal ten seconds after
+    /// delivery, but that work lives in an unstructured `Task`: a quit, a
+    /// crash, or a forced restart inside that window kills the Task and
+    /// orphans the notification in Notification Center forever. Every
+    /// delivered notification this app owns is by definition a stale reminder
+    /// — the app posts nothing else — so a blanket clear at startup is both
+    /// correct and sufficient to keep reminders from being long lived.
+    func clearDelivered() {
+        center.removeAllDeliveredNotifications()
+    }
+
     func notify(withSound: Bool) {
         let content = UNMutableNotificationContent()
         content.title = Twenty.notificationTitle

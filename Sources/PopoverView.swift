@@ -55,5 +55,11 @@ struct PopoverView: View {
         }
         .font(.system(size: 13))
         .frame(width: 236)
+        // A MenuBarExtra's content view is rebuilt every time the menu opens,
+        // so this re-runs on every open. That lifecycle quirk is the point:
+        // it catches notification permission being revoked — or re-granted —
+        // in System Settings, at the moment the user is looking at the panel.
+        // (start() is deliberately NOT here; it must run once, at launch.)
+        .task { await state.refreshAuthorization() }
     }
 }

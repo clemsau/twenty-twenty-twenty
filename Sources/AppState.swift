@@ -85,6 +85,12 @@ final class AppState {
         // burn a second per tick per timer.
         guard timer == nil else { return }
 
+        // Anything still sitting in Notification Center is a reminder from a
+        // previous run whose 10-second self-removal never got to run — the app
+        // quit or crashed inside that window. Clear it now: a reminder you did
+        // not see at the time has no value later.
+        notifier.clearDelivered()
+
         isSyncingFromSystem = true
 
         // Restore soundEnabled without triggering the UserDefaults write or
@@ -116,6 +122,28 @@ final class AppState {
         // request are intentional on this property alone.
         remindersEnabled = defaults.object(forKey: Key.remindersEnabled) as? Bool ?? false
         refreshStatus()
+    }
+
+    /// Re-reads the system's authorization state and updates the banner.
+    ///
+    /// `enableAfterAuthorization()` only runs when the user toggles reminders
+    /// on, so on its own it never notices permission being revoked in System
+    /// Settings later. When that happens the scheduler keeps counting and
+    /// `center.add(request)` keeps failing silently, and the popover keeps
+    /// claiming a break is coming. Calling this from the popover's `.task`
+    /// re-checks at the one moment the user is actually looking.
+    ///
+    /// Deliberately never prompts: `requestAuthorization()` is not called from
+    /// here, because merely opening the menu is not a request for
+    /// notifications and a prompt there would have no context. That makes
+    /// `.notDetermined` a non-denial — the user has simply not been asked yet,
+    /// which is the normal state while reminders are off — so only an explicit
+    /// `.denied` lights the banner. The prompt stays where it belongs, on
+    /// toggle-on.
+    func refreshAuthorization() async {
+        let denied = await notifier.authorizationStatus() == .denied
+        guard permissionDenied != denied else { return }
+        permissionDenied = denied
     }
 
     func openNotificationSettings() {
