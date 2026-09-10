@@ -19,11 +19,15 @@ cask "twenty-twenty-twenty" do
   desc "Menu bar reminder for the 20-20-20 eye rule"
   homepage "https://github.com/clementsauvage/twenty-twenty-twenty"
 
-  depends_on macos: ">= :sonoma"
+  depends_on macos: :sonoma
 
   app "Twenty twenty twenty.app"
 
+  # The app is sandboxed, so macOS redirects its UserDefaults into the container
+  # rather than ~/Library/Preferences. Removing the container removes the
+  # preferences with it.
   zap trash: [
-    "~/Library/Preferences/com.clementsauvage.TwentyTwentyTwenty.plist",
+    "~/Library/Application Scripts/com.clementsauvage.TwentyTwentyTwenty",
+    "~/Library/Containers/com.clementsauvage.TwentyTwentyTwenty",
   ]
 end

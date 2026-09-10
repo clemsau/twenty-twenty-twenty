@@ -60,11 +60,37 @@ and **Quit** are in the same popover.
 
 ## Build from source
 
+Until `v1.0.0` is published this is the only way to install the app, and it
+works today.
+
+You need **Xcode** from the Mac App Store — the Command Line Tools alone are
+not enough, because the build uses the macOS SDK and the Swift Testing
+framework that ship inside Xcode. Open Xcode once after installing it so it can
+finish its first-run setup. Then:
+
 ```bash
+git clone https://github.com/clementsauvage/twenty-twenty-twenty.git
+cd twenty-twenty-twenty
 brew install xcodegen
-make test    # run the test suite
 make build   # build the .app into ./build
-make dmg     # produce a distributable .dmg
+```
+
+`make build` puts the app at `build/Twenty twenty twenty.app`. Drag it into
+your **Applications** folder — in Finder, or from Terminal:
+
+```bash
+cp -R "build/Twenty twenty twenty.app" /Applications/
+```
+
+An app you built yourself is not quarantined, so it opens on the first
+double-click with no Gatekeeper prompt. There is no dock icon and no window —
+look for the small "20" in the menu bar.
+
+Two other targets, neither needed just to install:
+
+```bash
+make test    # run the test suite
+make dmg     # produce a distributable .dmg (for cutting a release)
 ```
 
 ## Releasing (maintainer notes)
