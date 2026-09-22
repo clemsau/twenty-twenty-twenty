@@ -16,12 +16,12 @@ look at something 20 feet away for 20 seconds.
 > with a download error. Build from source in the meantime — see below.
 
 ```bash
-brew tap clementsauvage/twenty-twenty-twenty https://github.com/clementsauvage/twenty-twenty-twenty
-brew install --cask --no-quarantine clementsauvage/twenty-twenty-twenty/twenty-twenty-twenty
+brew tap clemsau/twenty-twenty-twenty https://github.com/clemsau/twenty-twenty-twenty
+brew install --cask --no-quarantine clemsau/twenty-twenty-twenty/twenty-twenty-twenty
 ```
 
 The first command points Homebrew at this repository, which holds the cask in
-`Casks/`. It is not a conventional `clementsauvage/tap` tap, so the repository
+`Casks/`. It is not a conventional `clemsau/tap` tap, so the repository
 URL has to be given explicitly and the cask has to be installed by its full
 name.
 
@@ -69,7 +69,7 @@ framework that ship inside Xcode. Open Xcode once after installing it so it can
 finish its first-run setup. Then:
 
 ```bash
-git clone https://github.com/clementsauvage/twenty-twenty-twenty.git
+git clone https://github.com/clemsau/twenty-twenty-twenty.git
 cd twenty-twenty-twenty
 brew install xcodegen
 make build   # build the .app into ./build
@@ -104,11 +104,11 @@ same `build/TwentyTwentyTwenty.dmg` whose hash you put in
 
 `Casks/twenty-twenty-twenty.rb` is the canonical copy of the cask. If a
 dedicated `homebrew-tap` repository is created later, copy the file there;
-users can then use the shorter `brew tap clementsauvage/tap` form and the
+users can then use the shorter `brew tap clemsau/tap` form and the
 install instructions above should be updated to match.
 
 The GitHub owner in the cask's `url` and `homepage` is assumed to be
-`clementsauvage`, matching the bundle identifier. Confirm it before the first
+`clemsau`, matching the bundle identifier. Confirm it before the first
 release.
 
 ## Requirements
